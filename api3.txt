@@ -1,0 +1,120 @@
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import json
+import urllib.parse
+import mysql.connector
+
+# MySQL database connection settings
+db_config = {
+    'host': 'localhost',
+    'database': 'jayantdb1',
+    'user': 'root',
+    'password': '7866957@Pp'
+}
+
+class RequestHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        parsed_url = urllib.parse.urlparse(self.path)
+        query_params = urllib.parse.parse_qs(parsed_url.query)
+        name = query_params.get('name', [''])[0]
+
+        if parsed_url.path == '/data':
+            # Function to retrieve and display all data from the database
+            self.get_all_data()
+
+        elif name:
+            # Function to check if the provided name exists in the database
+            self.check_name_exists(name)
+
+        else:
+            # Handle invalid endpoints and missing name parameter
+            self.send_response(404)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': 'Invalid endpoint'}).encode())
+
+    def get_all_data(self):
+        try:
+            # Connect to the MySQL database
+            conn = mysql.connector.connect(**db_config)
+            cursor = conn.cursor()
+
+            # Execute the SELECT query to retrieve all data
+            cursor.execute('SELECT name, age FROM data')
+
+            # Fetch all the rows from the query result
+            rows = cursor.fetchall()
+
+            # Prepare the response as a list of dictionaries
+            data = []
+            for row in rows:
+                name, age = row
+                data.append({'name': name, 'age': age})
+
+            # Close the database connection
+            cursor.close()
+            conn.close()
+
+            # Set the response headers
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+
+            # Return the response as JSON
+            self.wfile.write(json.dumps(data).encode())
+
+        except mysql.connector.Error as error:
+            # Handle any potential MySQL errors
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': str(error)}).encode())
+
+    def check_name_exists(self, name):
+        try:
+            # Connect to the MySQL database
+            conn = mysql.connector.connect(**db_config)
+            cursor = conn.cursor()
+
+            # Execute the SELECT query with the provided name
+            query = "SELECT name, age FROM data WHERE name = %s"
+            cursor.execute(query, (name,))
+
+            # Fetch the first row from the query result
+            row = cursor.fetchone()
+
+            if row:
+                name, age = row
+                data = {'name': name, 'age': age}
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps(data).encode())
+            else:
+                self.send_response(404)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': 'Name not found'}).encode())
+
+            # Close the database connection
+            cursor.close()
+            conn.close()
+
+        except mysql.connector.Error as error:
+            # Handle any potential MySQL errors
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': str(error)}).encode())
+
+    def log_message(self, format, *args):
+        # Disable logging to console
+        return
+
+def run(server_class=HTTPServer, handler_class=RequestHandler, port=8000):
+    server_address = ('', port)
+    httpd = server_class(server_address, handler_class)
+    print(f'Starting server on port {port}...')
+    httpd.serve_forever()
+
+if __name__ == '__main__':
+    run()
