@@ -8,7 +8,7 @@ db_config = {
     'host': 'localhost',
     'database': 'jayantdb1',
     'user': 'root',
-    'password': '7866957@Pp'
+    'password': 'password'
 }
 
 class RequestHandler(BaseHTTPRequestHandler):

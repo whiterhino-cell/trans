@@ -1,0 +1,57 @@
+import json
+
+def merge_sort_recursive(data, city_key, zipcode_key, isp_key):
+    if len(data) <= 1:
+        return data
+
+    mid = len(data) // 2
+    left = merge_sort_recursive(data[:mid], city_key, zipcode_key, isp_key)
+    right = merge_sort_recursive(data[mid:], city_key, zipcode_key, isp_key)
+
+    return merge(left, right, city_key, zipcode_key, isp_key)
+
+def merge(left, right, city_key, zipcode_key, isp_key):
+    if not left:
+        return right
+    if not right:
+        return left
+
+    if left[0][city_key] < right[0][city_key]:
+        return [left[0]] + merge(left[1:], right, city_key, zipcode_key, isp_key)
+    elif left[0][city_key] > right[0][city_key]:
+        return [right[0]] + merge(left, right[1:], city_key, zipcode_key, isp_key)
+    else:
+        if left[0][zipcode_key] < right[0][zipcode_key]:
+            return [left[0]] + merge(left[1:], right, city_key, zipcode_key, isp_key)
+        elif left[0][zipcode_key] > right[0][zipcode_key]:
+            return [right[0]] + merge(left, right[1:], city_key, zipcode_key, isp_key)
+        else:
+            if left[0][isp_key] <= right[0][isp_key]:
+                return [left[0]] + merge(left[1:], right, city_key, zipcode_key, isp_key)
+            else:
+                return [right[0]] + merge(left, right[1:], city_key, zipcode_key, isp_key)
+
+def sort_json_file(json_file, city_key, zipcode_key, isp_key):
+    # Load the JSON data from the file
+    with open(json_file) as file:
+        data = json.load(file)
+
+    # Sort the data by city, zipcode, and isp using recursive merge sort
+    sorted_data = merge_sort_recursive(data, city_key, zipcode_key, isp_key)
+
+    # Save the sorted data back to the JSON file
+    sorted_file = "sorted_data3.json"
+    with open(sorted_file, 'w') as file:
+        json.dump(sorted_data, file, indent=4)
+
+    return sorted_file
+
+# Specify the JSON file path and the field names for sorting
+json_file = 'data.json'
+city_key = 'city'
+zipcode_key = 'zipcode'
+isp_key = 'isp'
+
+# Call the function to sort the JSON data
+sorted_json_file = sort_json_file(json_file, city_key, zipcode_key, isp_key)
+print(f"The JSON data has been sorted and saved to: {sorted_json_file}")
